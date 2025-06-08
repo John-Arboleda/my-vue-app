@@ -163,44 +163,9 @@
 //   gamma: 0.1452,
 // };
 
-interface DevParam {
-  vessel_coeficient: number,
-  intercept: number, 
-  log_lsfo: number,
-  tonco_2: {
-    hsfo: number,
-    mgo: number,
-    mdo: number,
-    vlsfo: number,
-    lng: number,
-  },
-  year_coeficient: {
-    1990: number,
-    2000: number, 
-    2010: number,
-    2015: number,
-  },
-}
 
-const dev_param: DevParam = {
-  vessel_coeficient: -3.00172,
-  year_coeficient: {
-    1990: 0.32582,
-    2000: 0.387301,
-    2010: 0.330991,
-    2015: 0,
-  },
-  intercept: 9.316642,
-  tonco_2: {
-    hsfo: 3114,
-    mgo: 3206,
-    mdo: 3206,
-    vlsfo: 3151,
-    lng: 2750,
-  },
-  log_lsfo: 0.518828,
 
-};
+
 
 
 
@@ -246,22 +211,68 @@ const EMIS = 2.65; // (kg CO2)/(L fuel oil) Specific CO2 emission
 // FOD<- 950      #           (kg/m3)             Fuel oil density
 const FOD = 950; // (kg/m3) Fuel oil density
  
-
-
-
-
-
-// # Input variables (param users)
-
-interface UserInputs {
-  vessel_type: 'gas_carrier' | 'tanker' | 'container_ship' | 'bulk_carrier';
-  year: number;
+interface DevParam {
+  R: number,
+  P2: number[],
+  P1: number[],
+  P0: number[],
+  GWP: number[],
+  TFAC: number[],
+  CTE: number,
+  U: number,
+  SFOC: number,
+  EMIS: number,
+  FOD: number,
+  vessel_coeficient: number,
+  intercept: number, 
+  log_lsfo: number,
+  tonco_2: {
+    hsfo: number,
+    mgo: number,
+    mdo: number,
+    vlsfo: number,
+    lng: number,
+  },
+  year_coeficient: {
+    1990: number,
+    2000: number, 
+    2010: number,
+    2015: number,
+  },
+  alpha: number,
+  beta: number,
 }
 
-const user_inputs: UserInputs = {
-  vessel_type: 'container_ship', 
-  year: 2000,
-
+const dev_param: DevParam = {
+  R,
+  P2,
+  P1,
+  P0,
+  GWP,
+  TFAC,
+  CTE,
+  U,
+  SFOC,
+  EMIS,
+  FOD,
+  vessel_coeficient: -3.00172,
+  year_coeficient: {
+    1990: 0.32582,
+    2000: 0.387301,
+    2010: 0.330991,
+    2015: 0,
+  },
+  intercept: 9.316642,
+  tonco_2: {
+    hsfo: 3114,
+    mgo: 3206,
+    mdo: 3206,
+    vlsfo: 3151,
+    lng: 2750,
+  },
+  log_lsfo: 0.518828,
+  alpha: 0.837778,
+  beta: 0.686491,
 };
 
 // # List
@@ -308,67 +319,45 @@ const REFCH = 5; // (kg) Refrigerant charge per year (amount of refrigerant char
 const RLEAK = 15; // (%/year) Refrigerant leak rate (percentage of refrigerant leak per year)
  
 
-// # Preprocessing
 
- 
+// # Input variables (param users)
 
-// CD1<-ifelse(Tset<=-10,LSFP,HSFP) # (kWth) cooling demand 1 (evap fan heat)
-const CD1 = Tset <= -10 ? LSFP : HSFP; // (kWth) Cooling demand 1 (evaporator fan heat)
-
-// CD2<-U*(Tamb-Tset)/1000 # (kWth) cooling demand 2 (ambient heat)
-const CD2 = U * (Tamb - Tset) / 1000; // (kWth) Cooling demand 2 (ambient heat)
-
-// CD3<-CHP*Cargo/1000 # (kWth) cooling demand 3 (respiration)
-const CD3 = CHP * Cargo / 1000; // (kWth) Cooling demand 3 (respiration heat of the cargo)
-
-// CDT<-CD1+CD2+CD3 # (kWth) cooling demand
-const CDT = CD1 + CD2 + CD3; // (kWth) Total cooling demand (sum of all cooling demands)
- 
-// COP<-array(rep(0,R), dim=c(R))  #COP      (kWth/kWe)
-const COP = new Array(R).fill(0); // COP (Coefficient of Performance) (kWth/kWe)
-
-// EPU<-array(rep(0,R), dim=c(R))  #electric power uptake (kWe)
-const EPU = new Array(R).fill(0); // Electric power uptake (kWe)
- 
-
-// for(r in 1:R){
-//   COP[r]<-P0[r]*(P1[r]^Tset)*(P2[r]^Tamb)
-//   EPU[r]<-CDT/COP[r]+CD1
-// }
-
-for (let r = 0; r < R; r++) {
-  COP[r] = P0[r] * (P1[r] ** Tset) * (P2[r] ** Tamb);
-  EPU[r] = CDT / COP[r] + CD1;
+interface UserInputs {
+  Tset: number; // (°C) Tset inside (set temperature inside the refrigerated container)
+  CHP: number; // (W/tonne) cargo heat production (respiration heat of the cargo)
+  Dtrip: number; // (days) duration of trip
+  Tyear: number; // (trips/year) no. of trips per year
+  Cargo: number; // (tonnes/refer) amount of cargo (cargo weight in tonnes per refrigerated container)
+  Tamb: number; // (°C) Ambient temperature (outside temperature)
+  HSFP: number; // (kWe) Speed evap fan power (high speed evaporator fan power)
+  LSFP: number; // (kWe) Low speed evap fan power (low speed evaporator fan power)
+  REFCH: number; // (kg) Refrigerant charge per year (amount of refrigerant charge in kg)
+  RLEAK: number; // (%/year) Refrigerant leak rate (percentage of refrigerant leak per year)
+  vessel_type: 'gas_carrier' | 'tanker' | 'container_ship' | 'bulk_carrier';
+  year: number;
+  maxcon?: number; // Maximum container capacity (optional, for container ships)
+  util?: number; // Utilization factor (optional, default is 0.8)
+  miles?: number; // Distance in nautical miles (optional, default is 3000)
 }
 
- 
+const user_inputs: UserInputs = {
+  Tset,
+  CHP,
+  Dtrip,
+  Tyear,
+  Cargo,
+  Tamb,
+  HSFP,
+  LSFP,
+  REFCH,
+  RLEAK,
+  vessel_type: 'container_ship', 
+  year: 2000,
+  maxcon: 20000, // Maximum container capacity
+  util: 0.8, // Utilization factor
+  miles: 3000, // Distance in nautical miles
+};
 
-// #Variables
 
-// IE<-array(rep(0,R), dim=c(R))   #indirect emissions (kg CO2eq)
-let IE = new Array(R).fill(0); // Indirect emissions (kg CO2eq)
-
-// DE<-array(rep(0,R), dim=c(R))   #direct emissions (kg CO2eq)
-let DE = new Array(R).fill(0); // Direct emissions (kg CO2eq)
-
-// TEWI<-array(rep(0,R), dim=c(R)) #TEWI (kg CO2eq)
-let TEWI = new Array(R).fill(0); // Total Equivalent Warming Impact (TEWI) (kg CO2eq)
-
-// TFAE<-array(rep(0,R), dim=c(R))  #TFA(PFAS)  (kg CO2eq)
-let TFAE = new Array(R).fill(0); // Total Fluorinated Alkyl Substances Equivalent (TFAE) (kg CO2eq)
- 
-
-// for(r in 1:R){
-//   IE[r]<-CTE*Dtrip*SFOC*EMIS*EPU[r]/FOD
-//   DE[r]<-REFCH*RLEAK*GWP[r]/(100*Tyear)
-//   TEWI[r]<-IE[r]+DE[r]
-//   TFAE[r]<-REFCH*RLEAK*TFAC[r]/(100^2*Tyear)
-//     }
-for (let r = 0; r < R; r++) {
-  IE[r] = CTE * Dtrip * SFOC * EMIS * EPU[r] / FOD;
-  DE[r] = REFCH * RLEAK * GWP[r] / (100 * Tyear);
-  TEWI[r] = IE[r] + DE[r];
-  TFAE[r] = REFCH * RLEAK * TFAC[r] / (100 ** 2 * Tyear);
-}
 
 export { user_inputs, dev_param }
