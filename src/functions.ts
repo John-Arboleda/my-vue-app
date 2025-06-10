@@ -138,7 +138,7 @@ function transformData(dataObj: any = user_inputs): any {
       * tonnes() ** (beta - 1);
   }
 
-  function cf_calc() {
+  function cf_calc() { // Toneladas / milla náutica
     return cf() / fuel_factor();
   }
 

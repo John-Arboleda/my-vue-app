@@ -280,16 +280,32 @@ const dev_param: DevParam = {
 // Tset<- 0            #           (°C)      Tset inside
 const Tset = 0; // (°C) Tset inside (set temperature inside the refrigerated container)
 
+const list = {
+  "Fish & Seafood": {
+    "tset": -20,
+    "CHP": 0,
+  }
+}
+
 // CHP<- 35         #           (W/tonne)        cargo heat production
 const CHP = 35; // (W/tonne) cargo heat production (respiration heat of the cargo)
 
-// Dtrip<-              21         #            (days)  duration of trip
-const Dtrip = 21; // (days) duration of trip
- 
 
- 
+
 
 // # Route params
+
+const routList = {
+  5373: {
+    "Dtrip": 59,
+    "miles": 6082,
+    "Tyear": 26
+
+  }
+}
+
+// Dtrip<-              21         #            (days)  duration of trip
+const Dtrip = 21; // (days) duration of trip
 
 // Tyear<-             5           #            (trips/year)      no. of trips per year
 const Tyear = 5; // (trips/year) no. of trips per year
